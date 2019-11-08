@@ -55,7 +55,6 @@ play({RLPF.ar(Dust.ar([12, 15]), LFNoise1.ar(1/[3, 4], 1500, 1600), 0.02)});
 // freq is the rate of starting points
 { var freq = 1000; [LFNoise0.ar(freq), Impulse.ar(freq)] }.plot
 
-
 // LFNoise1
 { LFNoise1.ar(1000, 0.25) }.play;
 
@@ -74,10 +73,8 @@ play({RLPF.ar(Dust.ar([12, 15]), LFNoise1.ar(1/[3, 4], 1500, 1600), 0.02)});
 // freq is the rate of starting points
 { var freq = 1000; [LFNoise1.ar(freq), Impulse.ar(freq)] }.plot
 
-
 // XLine
 play({ SinOsc.ar(XLine.kr(200,17000,10),0,0.1) });
-
 
 // RLPF
 { RLPF.ar(Saw.ar(200, 0.1), SinOsc.ar(XLine.kr(0.7, 300, 20), 0, 3600, 4000), 0.2) }.play;
@@ -118,12 +115,10 @@ SynthDef("help-Dust", { arg out=0;
 // two band limited sawtooth waves through a resonant low pass filter
 { RLPF.ar(Saw.ar([100,250],0.1), XLine.kr(8000,400,5), 0.05) }.play;
 
-
 // MouseX, MouseY
 { SinOsc.ar(MouseX.kr(40, 10000, 1), 0, 0.1) }.play;
 { SinOsc.ar(MouseX.kr(500, 10000, 1).poll, 0, 0.1) }.play;
 { SinOsc.ar(MouseY.kr(40, 10000, 1), 0, 0.1) }.play;
-
 
 // Figure 1.1
 play({
