@@ -300,3 +300,90 @@ fork { (1 / (1..60).scramble).do { |dt| Synth.grain(\imp);  dt.wait } };
 { LFSaw.ar(20, [0, 1, 2]) }.plot(0.1)
 
 
+
+/**
+ * SuperCollider #006
+ */
+{ SinOsc.ar(440, 0, 0.5) }.plot
+{ FSinOsc.ar(440, 0, 0.5) }.plot
+{ Saw.ar(440, 1, 0.5) }.play
+{ LFSaw.ar(440, 1, 0.5) }.play
+
+5 + 10 * 4
+5 + 10.squared
+[0, 11, 10, 1, 9, 8, 2, 3, 7, 4, 6, 5].reverse
+12 - [0, 11, 10, 1, 9, 8, 2, 3, 7, 4, 6, 5]
+12 - [0, 11, 10, 1, 9, 8, 2, 3, 7, 4, 6, 5].reverse
+[0, 2, 4, 5, 6, 7, 9, 11].scramble
+[60, 62, 64, 67, 69].mirror
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].rotate
+[60, 62, 64, 65, 67, 69, 71].midicps.round(0.1)
+[1, 0.75, 0.5, 0.25, 0.125].choose
+0.125 * [1, 2, 3, 4, 5, 6, 7, 8].choose
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].permute(6)
+dup(rand(1000.0), 5)
+dup({rand(1000.0)}, 5)
+{LFNoise0.ar}.play
+{LFNoise0.ar(10000)}.plot
+{LFNoise0.ar(10000)}.scope
+{100.rand}.dup(10)
+{100.rand} ! 10
+{100.rand}.dup(10).postln.plot
+{100.rand}.dup(100).sort.plot
+{Blip.ar(25, LFNoise0.kr(5, 12, 14), 0.3)}.play
+{Blip.ar(25, LFNoise0.kr([5, 10], 12, 14), 0.3)}.play
+{Blip.ar(25, LFNoise0.kr([5, 10, 2, 25], 12, 14), 0.3)}.play
+{Blip.ar(25, LFNoise0.kr([5, 4, 7, 9, 5, 1, 9, 2], 12, 14), 0.3)}.play
+
+// Blip Examples
+// modulate frequency
+{ Blip.ar(XLine.kr(20000,200,6).dup,100,0.2) }.play;
+
+// modulate numharmonics
+{ Blip.ar(200,Line.kr(1,100,20).dup,0.2) }.play;
+
+{PMOsc.ar(440, 550, 7, 0, 0.1).dup}.play
+{PMOsc.ar(440, 550, MouseY.kr(1, 550), MouseX.kr(1, 15), 0.1).dup}.play
+{PMOsc.ar(100, 500, 10, 0, 0.1).dup}.play
+{PMOsc.ar(carfreq: 100, modfreq: 500, pmindex: 10, mul: 0.1).dup}.play
+{PMOsc.ar(carfreq: 100, mul: 0.1, pmindex: 10, modfreq: 500).dup}.play
+{SinOsc.ar(mul: MouseX.kr(0, 1.0))}.scope
+
+// PMOsc Examples
+play({ PMOsc.ar(Line.kr(600, 900, 5).dup, 600, 3, 0, 0.1) }); // modulate carfreq
+
+play({ PMOsc.ar(300, Line.kr(600, 900, 5).dup, 3, 0, 0.1) }); // modulate modfreq
+
+play({ PMOsc.ar(300, 550, Line.ar(0,20,8).dup, 0, 0.1) }); // modulate index
+
+(
+e = Env.linen(2, 5, 2);
+Routine.run({
+    loop({
+        play({
+            LinPan2.ar(EnvGen.ar(e) *
+                PMOsc.ar(2000.0.rand,800.0.rand, Line.kr(0.0, 12.0.rand,9),0,0.1), 1.0.rand2)});
+        2.wait;
+    })
+}))
+
+// Figure1.4
+(
+{
+	Blip.ar(
+		TRand.kr(
+			100, 1000,
+			Impulse.kr(Line.kr(1, 20, 60))), // Trigger
+		TRand.kr(
+		    1, 10,
+			Impulse.kr(Line.kr(1, 20, 60))), // Trigger
+		Linen.kr(
+			Impulse.kr(Line.kr(1, 20, 60)), // Trigger
+		    0, // attack
+			0.5, // sustain level
+			1/Line.kr(1, 20, 60))
+	).dup
+}.play
+)
+
+
