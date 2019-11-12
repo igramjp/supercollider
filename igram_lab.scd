@@ -387,3 +387,64 @@ Routine.run({
 )
 
 
+
+/**
+ * SuperCollider #007
+ */
+Env.linen(0.1, 0.2, 0.1, 0.6).test.plot;
+Env.linen(1, 2, 3, 0.6).test.plot;
+Env.linen(1, 2, 3, 0.6, \sine).test.plot;
+Env.linen(1, 2, 3, 0.6, \welch).test.plot;
+Env.linen(1, 2, 3, 0.6, \lin).test.plot;
+Env.linen(1, 2, 3, 0.6, \exp).test.plot;
+Env.linen(1, 2, 3, 0.6, -3).test.plot;
+Env.linen(1, 2, 3, 0.6, 3).test.plot;
+Env.linen(1, 2, 3, 0.6, [[\sine, \welch, \lin, \exp]]).plot;
+Env.linen(2, 5, 2, 0.6).test.plot;
+
+// Routine .wait
+c = Condition(false); fork { 0.5.wait; "started ...".postln; c.wait;  "... and finished.".postln };
+c.test = true;
+c.signal;
+
+// loop
+t = Task({ { "I'm loopy".postln; 1.wait;}.loop });
+t.start;
+t.stop;
+
+e = Env.linen(2, 5, 2);
+play({
+    LinPan2.ar(EnvGen.ar(e) *
+        PMOsc.ar(2000.0.rand,800.0.rand, Line.kr(0.0, 12.0.rand,9),0,0.1), 1.0.rand2)})
+
+{PMOsc.ar(2000.0.rand,800.0.rand, Line.kr(0.0, 12.0.rand,9),0,0.1)}.play
+
+{EnvGen.ar(e) * PMOsc.ar(2000.0.rand,800.0.rand, Line.kr(0.0, 12.0.rand,9),0,0.1)}.play
+
+loop{(play({LinPan2.ar(EnvGen.ar(e) * PMOsc.ar(2000.0.rand,800.0.rand, Line.kr(0.0, 12.0.rand,9),0,0.1), 1.0.rand2)}); 2.wait;)}
+
+(Routine.run({loop{(play({LinPan2.ar(EnvGen.ar(e) * PMOsc.ar(2000.0.rand,800.0.rand, Line.kr(0.0, 12.0.rand,9),0,0.1), 1.0.rand2)}); 2.wait;)}}))
+
+(
+{
+	r = MouseX.kr(1/3, 10);
+	SinOsc.ar(mul: Linen.kr(Impulse.kr(r), 0, 1, 1/r)).dup
+}.play
+)
+
+// Figure 1.5
+(
+// run this first
+p = { // make p equal to this function
+	// r = Line.kr(1, 20, 60); // rate
+	r = LFTri.kr(1/10) * 3 + 7;
+	// t = Impulse.kr(r); // trigger
+	t = Dust.kr(r);
+	e = Linen.kr(t, 0, 0.5, 1/r); // envelope uses r and t
+	// f = TRand.kr(1, 10, t); // triggered random also uses t
+	f = e + 1 * 4;
+	Blip.ar(f * 100, f, e).dup // f, and e uses in Blip
+}.play
+)
+
+p.free
