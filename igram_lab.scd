@@ -436,15 +436,207 @@ loop{(play({LinPan2.ar(EnvGen.ar(e) * PMOsc.ar(2000.0.rand,800.0.rand, Line.kr(0
 (
 // run this first
 p = { // make p equal to this function
-	// r = Line.kr(1, 20, 60); // rate
-	r = LFTri.kr(1/10) * 3 + 7;
-	// t = Impulse.kr(r); // trigger
-	t = Dust.kr(r);
+	r = Line.kr(1, 20, 60); // rate
+	// r = LFTri.kr(1/10) * 3 + 7;
+	t = Impulse.kr(r); // trigger
+	// t = Dust.kr(r);
 	e = Linen.kr(t, 0, 0.5, 1/r); // envelope uses r and t
 	// f = TRand.kr(1, 10, t); // triggered random also uses t
 	f = e + 1 * 4;
 	Blip.ar(f * 100, f, e).dup // f, and e uses in Blip
-}.play
+}.scope
 )
 
 p.free
+
+
+
+/**
+ * SuperCollider #008
+ */
+{ SinOsc.ar(200, 0, 0.2).dup }.scope;
+{ FSinOsc.ar(200, 0, 0.2).dup }.scope;
+
+// TRand Examples
+(
+{
+    var trig = Dust.kr(10);
+    SinOsc.ar(
+            TRand.kr(300, 3000, trig)
+        ).dup * 0.1
+}.scope;
+)
+
+(
+{
+    var trig = Dust.ar(MouseX.kr(1, 8000, 1).poll);
+    SinOsc.ar(
+            TRand.ar(300, 3000, trig)
+        ).dup * 0.1
+}.scope;
+)
+
+// Line Examples
+// XLine is usually better than Line for frequency
+play({ SinOsc.ar(Line.kr(200,17000,10).dup,0,0.05)});
+
+
+// Linen Examples
+// trigged
+(
+SynthDef("help-Linen",{ arg out = 0;
+    Out.ar(out,
+        Linen.kr(Impulse.kr(2).dup, 0.01, 0.6, 1.0, doneAction: Done.none).scope * SinOsc.ar(440, 0, 0.1)
+    )
+}).play;
+)
+
+// play once and end the synth
+(
+SynthDef("help-Linen",{ arg out=0;
+    Out.ar(out,
+        Linen.kr(Impulse.kr(0).dup, 0.01, 0.6, 1.0, doneAction: Done.freeSelf) * SinOsc.ar(440, 0, 0.1)
+    )
+}).play;
+)
+
+// play once and sustain
+(
+x = SynthDef("help-Linen",{ arg gate = 1, out = 0; // use gate arg for release
+    Out.ar(out,
+        Linen.kr(gate.dup, 0.01, 0.6, 1.0, doneAction: Done.freeSelf) * SinOsc.ar(440, 0, 0.1)
+    )
+}).play;
+)
+x.release(4); // change the release time
+
+// longer gate, can pass in duration
+(
+SynthDef("help-Linen",{ arg out = 0, dur = 0.1, gate = 0;
+    // gate = Trig.kr(1.0, dur);
+    Out.ar(out,
+        Linen.kr(gate.dup, 0.01, 0.6, 1.0, doneAction: Done.freeSelf) * SinOsc.ar(440, 0, 0.1)
+    )
+}).play(nil, [\out, 0, \dur, 2.0, \gate, 1]);
+)
+
+// used below in a Routine varying the releaseTime
+(
+SynthDef("help-Linen",{ arg out=0,freq=440,attackTime=0.01,susLevel=0.6,releaseTime=0.1;
+    Out.ar(out,
+        Linen.kr(Impulse.kr(0).dup, attackTime, susLevel, releaseTime, doneAction: Done.freeSelf)
+            * SinOsc.ar(freq, 0, 0.1)
+    )
+}).add;
+)
+
+(
+// debussey sleeping through math class
+x = Pbrown(0.01, 2.0, 0.2, inf).asStream;
+Routine({
+    loop({
+        Synth.grain("help-Linen",[\freq, (rrand(20, 50) * 2).midicps, \releaseTime, x.next]);
+        0.25.wait;
+    })
+}).play(TempoClock.default)
+)
+
+(
+SynthDef("help-Linen",{ arg out = 0;
+    Out.ar(out,
+
+        Linen.kr(Impulse.kr(2).dup,
+            0.01,
+            // sustain level is polled at time of trigger
+            FSinOsc.kr(0.1).range(0, 1),
+            1.0,
+            doneAction: Done.none)
+
+            * SinOsc.ar(440, 0, 0.1)
+    )
+}).play;
+)
+
+
+// Pbrown Examples
+(
+var a;
+a = Pbrown(0.0, 1.0, 0.1, inf);
+c = a.asStream.nextN(500);
+w = Window.new("Pbrown", Rect(10, 10, 540, 800));
+// plot the values
+c.plot(bounds: Rect(10, 10, 520, 380), discrete: true, parent: w);
+// a histogram of the values
+c.histo(500).plot(bounds: Rect(10, 410, 520, 380), parent: w);
+)
+
+(
+var a;
+a = Pbrown(0.0, 1.0, 0.2, inf);
+a.asStream.nextN(1000).plot;
+)
+
+// sound example
+(
+SynthDef(\help_sinegrain,
+    { arg out=0, freq=440, sustain=0.05;
+        var env;
+        env = EnvGen.kr(Env.perc(0.01, sustain, 0.2), doneAction: Done.freeSelf);
+        Out.ar(out, SinOsc.ar(freq, 0, env).dup)
+    }).add;
+)
+
+(
+var a;
+a = Pbrown(0.0, 1.0, 0.1, inf).asStream;
+{
+    loop {
+        Synth(\help_sinegrain, [\freq, a.next * 600 + 300]);
+        0.02.wait;
+    }
+}.fork;
+)
+
+// parallel browninan motions
+(
+var a, x, f;
+a = Pbrown(0.0, 1.0, 0.1, inf);
+
+f = { |pattern, dt=0.02, min=300, max=900|
+    {
+        var x = pattern.asStream;
+        loop {
+            Synth.grain(\help_sinegrain, [\freq, x.next.linexp(0, 1, min, max), \sustain, dt]);
+            dt.wait;
+        }
+    }.fork;
+}.flop;
+
+// 3 parallel motions
+f.(a, [0.02, 0.08, 0.16]);
+)
+
+// Figure 1.6
+(
+{ // carrier and modulator not linked
+	r = Impulse.kr(10);
+	c = TRand.kr(100, 5000, r);
+	m = TRand.kr(100, 5000, r);
+	PMOsc.ar(c, m, 12).dup * 0.2
+}.scope
+)
+
+(
+{
+	var rate = 4, carrier, modRatio; // declare variables
+	carrier = LFNoise0.kr(rate) * 500 + 700;
+	modRatio = MouseX.kr(1, 2.0);
+	// modulator expressed as ratio, therefore timbre
+	PMOsc.ar(carrier.poll, carrier * modRatio, 12).dup * 0.2
+}.scope
+)
+
+
+
+
+
