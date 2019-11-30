@@ -638,5 +638,143 @@ f.(a, [0.02, 0.08, 0.16]);
 
 
 
+/**
+ * SuperCollider #009
+ */
+// Trig Examples
+{ Trig.ar(Dust.ar(1), 0.2) * FSinOsc.ar(800, 0.5) }.play
+{ Trig.ar(Dust.ar(4), 0.1) }.play
+
+// Synth.grain
+// A convenience method which will create a synth node with an node ID of -1. Such a node cannot be messaged after creation. As such this method does not create an object, and returns nil. For details of its arguments see new above.
+// Returns: nil
+
+// asStream Examples
+(
+{
+e = Env.sine.asStream;
+5.do({
+    e.next.postln;
+    0.25.wait;
+})}.fork
+)
+
+// fork Examples
+// an array of routine functions:
+(
+a = [
+    { 1.wait; \done_one.postln },
+    { 0.5.wait; \done_two.postln },
+    { 0.2.wait; \done_three.postln }
+];
+)
+// join after 0
+(
+Routine {
+    "join = 0.".postcln;
+    a.fork(0); \doneAll.postln;
+}.play;
+)
+
+// join after 1
+(
+Routine {
+    "join = 1.".postcln;
+    a.fork(1); \doneAll.postln;
+}.play;
+)
+// join after all
+(
+Routine {
+    "join = a.size (default).".postcln;
+    a.fork; \doneAll.postln;
+}.play;
+)
+
+// flop Examples
+[[1, 2, 3], [4, 5, 6]].flop;
+[[1, 2, 3], [4, 5, 6], [7, 8]].flop; // shorter array wraps
+[].flop; // result is always 2-d.
+
+// range
+// Returns maxval - minval.
+(
+var spec;
+spec = [ 100, 18000, \exp].asSpec;
+{
+    var freq,osc;
+    osc = SinOsc.kr(0.1).range(0,1);
+	osc.poll;
+    freq = spec.map( osc );
+
+    freq.dump;// BinaryOpUGen
+
+    SinOsc.ar(
+        freq.poll
+    )
+}.play
+)
+
+{FSinOsc.ar}.play // generates a temp__number synth
+SynthDef("sine", {Out.ar(0, FSinOsc.ar)}).play // create a synthdef and play immediately
+SynthDef("sine", {Out.ar(1, FSinOsc.ar)}).play // right channel
+// or
+(
+SynthDef("one_tone_only", {
+	var out, freq = 440;
+	out = FSinOsc.ar(freq);
+	Out.ar(0, out);
+}).add // makesure SuperCollider knows about this SynthDef
+)
+// then use it top create a running synth
+Synth("one_tone_only");
+
+SynthDef("different_tones", {
+	arg freq = 440; // declare an argument and give it a default value
+	var out;
+	out = SinOsc.ar(freq) * 0.3;
+	Out.ar(0, out)
+}).play
+
+// Run all four, then stop all
+Synth("different_tones", ["freq", 550]);
+Synth("different_tones", [\freq, 660]); // same as "freq"
+Synth("different_tones", ["freq", 880]);
+// If no argument is specified, default are used (440)
+Synth("different_tones");
+
+a = Synth("different_tones", ["freq", 64.midicps]);
+b = Synth("different_tones", ["freq", 67.midicps]);
+c = Synth("different_tones", ["freq", 72.midicps]);
+a.set("freq", 65.midicps);
+c.set("freq", 71.midicps);
+a.set("freq", 64.midicps); c.set("freq", 72.midicps);
+a.free;
+b.free;
+c.free;
+
+// Figure 1.7
+(
+// run this first
+SynthDef("PMCrotale", {
+	arg midi = 60, tone = 3, art = 1, amp = 0.8, pan = 0;
+	var env, out, mod, freq;
+
+	freq = midi.midicps;
+	env = Env.perc(0, art);
+	mod = 5 + (1 / IRand(2, 6));
+
+	out = PMOsc.ar(freq, mod * freq,
+		pmindex: EnvGen.kr(env, timeScale: art, levelScale: 0.3));
+
+	out = Pan2.ar(out, pan);
+
+	out = out * EnvGen.kr(env, timeScale: 1.3 * art, levelScale: Rand(0.1, 0.5), doneAction: 2);
+	Out.ar(0, out); // Out.ar(bus, out);
+}).add;
+)
+
+// Then run this a bunch of times:
+Synth("PMCrotale", ["midi", rrand(48, 72).round(1), "tone", rrand(1, 6)]);
 
 
