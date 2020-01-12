@@ -738,7 +738,7 @@ SynthDef("different_tones", {
 
 // Run all four, then stop all
 Synth("different_tones", ["freq", 550]);
-Synth("different_tones", [\freq, 660]); // same as "freq"
+Synth("different_tones", [\freq, 660]); //same as "freq"
 Synth("different_tones", ["freq", 880]);
 // If no argument is specified, default are used (440)
 Synth("different_tones");
@@ -778,3 +778,37 @@ SynthDef("PMCrotale", {
 Synth("PMCrotale", ["midi", rrand(48, 72).round(1), "tone", rrand(1, 6)]);
 
 
+
+/**
+ * SuperCollider #010
+ */
+Server.default = s = Server.internal.boot
+~houston = Buffer.read(s, "/Applications/SuperCollider/sounds/Ambient Effect 1.wav");
+~chooston = Buffer.read(s, "/Applications/SuperCollider/sounds/Ambient Effect 2.wav");
+
+{PlayBuf.ar(2, ~houston, loop: 1)}.play
+{PlayBuf.ar(2, ~chooston)}.play
+
+// Figure 1.8
+[~houston.bufnum, ~houston.numChannels, ~houston.path, ~houston.numFrames];
+[~chooston.bufnum, ~chooston.numChannels, ~chooston.path, ~chooston.numFrames];
+
+( // phasing
+{
+	var rate, trigger, frames;
+	frames = ~chooston.numFrames; // or ~chooston.numFrames
+
+	rate = [1, 1.01];
+	trigger = Impulse.kr(rate);
+	PlayBuf.ar(2, ~chooston, 1, trigger, frames * Line.kr(0, 1, 60)) * EnvGen.kr(Env.linen(0.01, 0.96, 0.01), trigger) * rate;
+}.play
+)
+
+( // speed and direction change
+{
+	var speed, direction;
+	speed = LFNoise0.kr(12) * 0.2 + 1;
+	direction = LFClipNoise.kr(1/3);
+	PlayBuf.ar(2, ~chooston, (speed * direction), loop: 1);
+}.play
+)
