@@ -812,3 +812,146 @@ Server.default = s = Server.internal.boot
 	PlayBuf.ar(2, ~chooston, (speed * direction), loop: 1);
 }.play
 )
+
+
+(
+{
+var fund = 220;
+Mix.ar(
+    [
+    FSinOsc.ar(fund*1, mul: max(0, LFNoise1.kr(12))),
+    FSinOsc.ar(fund*2, mul: max(0, LFNoise1.kr(12)))*1/2,
+    FSinOsc.ar(fund*3, mul: max(0, LFNoise1.kr(12)))*1/3,
+    FSinOsc.ar(fund*4, mul: max(0, LFNoise1.kr(12)))*1/4,
+    FSinOsc.ar(fund*5, mul: max(0, LFNoise1.kr(12)))*1/5,
+    FSinOsc.ar(fund*6, mul: max(0, LFNoise1.kr(12)))*1/6,
+    ]
+)*0.3
+}.play
+)
+
+(
+{
+    var scale, specs, freqs, amps, rings,
+    numRes = 5, bells = 20, pan;
+    scale = [60, 62, 64, 67, 69].midicps;
+    Mix.fill(bells, {
+        //周波数
+        freqs = Array.fill(numRes, {rrand(1, 15)*(scale.choose)});
+        //音量
+        amps = Array.fill(numRes, {rrand(0.3, 0.9)});
+        //減衰
+        rings = Array.fill(numRes, {rrand(1.0, 4.0)});
+        //周波数、音量、減衰からKlangのspecs引数を生成
+        specs = [freqs, amps, rings].round(0.01);
+        //定位
+        pan = (LFNoise1.kr(rrand(3, 6))*2).softclip;
+        //Klangを生成
+        Pan2.ar(
+            Klank.ar(`specs, Dust.ar(1/6, 0.03)),
+            pan)
+    })
+}.play;
+)
+
+s.record(duration: 12);
+
+
+
+/**
+ * SuperCollider #011
+ */
+Server.default = s = Server.internal.boot
+~houston = Buffer.read(s, "/Applications/SuperCollider/sounds/Ambient Effect 1.wav");
+~chooston = Buffer.read(s, "/Applications/SuperCollider/sounds/Ambient Effect 2.wav");
+{PlayBuf.ar(2, ~houston, loop: 1)}.play
+{PlayBuf.ar(2, ~chooston)}.play
+
+// Figure 1.9
+(
+// if these haven't been used they will hold 0
+~kbus1 = Bus.control; // a control bus
+~kbus2 = Bus.control; // a control bus
+{
+	var speed, direction;
+	speed = In.kr(~kbus1, 2) * 0.2 + 1;
+	direction = In.kr(~kbus2);
+	PlayBuf.ar(2, ~chooston, (speed * direction), loop: 1);
+}.play;
+)
+
+(
+// now start the controls
+{Out.kr(~kbus1, LFNoise0.kr(12))}.play;
+{Out.kr(~kbus2, LFClipNoise.kr(1/4))}.play;
+)
+// Now staqrt the second buffer with the same control input buses,
+// but send it to the right channel using Out.ar(1 etc.
+(
+{
+	var speed, direction;
+	speed = In.kr(~kbus1, 1) * 0.2 + 1;
+	direction = In.kr(~kbus2);
+	Out.ar(0, PlayBuf.ar(2, ~houston, (speed * direction), loop: 1));
+}.play;
+)
+
+~kbus3 = Bus.control; // a control bus
+~kbus4 = Bus.control; // a control bus
+// run these one at a time, (turn down the speakers!)
+{Out.kr(~kbus3, SinOsc.kr(3).scope("out3") * 100)}.play;
+{Out.kr(~kbus4, LFPulse.kr(1/3).scope("out4") * 200)}.play;
+{Out.ar(0, SinOsc.ar(In.kr(~kbus3) + In.kr(~kbus4) + 440).scope("left"))}.play;
+{Out.ar(1, SinOsc.ar(In.kr(~kbus3) + In.kr(~kbus4) + 880).scope("right"))}.play;
+
+// When combined with a SynthDef, the routing can be swapped around in real time.
+~kbus3 = Bus.control; // a control bus
+~kbus4 = Bus.control; // a control bus
+{Out.kr(~kbus3, SinOsc.kr(3).range(340, 540))}.play;
+{Out.kr(~kbus4, LFPulse.kr(6).range(240, 640))}.play;
+SynthDef("Switch", {arg freq = 440; Out.ar(0, SinOsc.ar(freq, 0, 0.3))}).add;
+x = Synth("Switch"); // default
+x.map(\freq, ~kbus3);
+x.map(\freq, ~kbus4);
+
+// Examples
+(
+{
+    Out.ar(0,
+        Pan2.ar( PlayBuf.ar(1, ~houston, loop: 1) *
+            SinOsc.ar(LFNoise0.kr(12, mul: 500, add: 600)),
+        0.5)
+    )
+}.play
+)
+
+(
+{
+var source, delay;
+    source = PlayBuf.ar(1, ~chooston, loop: 1);
+    delay =  AllpassC.ar(source, 2, [0.65, 1.15], 10);
+    Out.ar(0,
+    Pan2.ar(source) + delay
+    )
+}.play
+)
+
+~delay = Bus.audio(s, 2);
+~mod = Bus.audio(s, 2);
+~gate = Bus.audio(s, 2);
+~k5 = Bus.control;
+
+// コントロールバスを開始
+{Out.kr(~k5, LFNoise0.kr(4))}.play;
+// 最後の出力に手前でディレイラインを開始
+{Out.ar(0, AllpassC.ar(In.ar(~delay, 2), 2, [0.65, 1.15], 10))}.play;
+// ディレイの手前で音量のモジュレーションを開始
+{Out.ar(~delay, In.ar(~mod, 2) * SinOsc.ar(In.kr(~k5)*500 + 1100))}.play;
+// モジュレーションの手前でゲートを設定
+{Out.ar([0, ~mod], In.ar(~gate, 2) * max(0, In.kr(~k5)))}.play;
+// これで、エフェクトのチェーンの部分はできたのでここに実際にオーディオバッファを再生してみる
+{Out.ar(~gate, Pan2.ar(PlayBuf.ar(1, ~houston, loop: 1), 0.5))}.play;
+// すると、3つのエフェクトをチェーンにして再生される
+// さらに別の音を追加することも可能
+{Out.ar(~gate, Pan2.ar(PlayBuf.ar(1, ~chooston, loop: 1), -0.5))}.play;
+
