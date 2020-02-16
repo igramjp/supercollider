@@ -955,3 +955,157 @@ var source, delay;
 // さらに別の音を追加することも可能
 {Out.ar(~gate, Pan2.ar(PlayBuf.ar(1, ~chooston, loop: 1), -0.5))}.play;
 
+
+
+/**
+ * SuperCollider #012
+ */
+// Arrays, Iteration, and Logical Expression
+a = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+a.at(8);
+"Item at index 5 is ".post; a.at(5).postln;
+"Item at index 0 is ".post; a.at(0).postln;
+do(50, {[0, 2, 4, 5, 7, 9, 11].at(7.rand).postln})
+do(50, {["C", "D", "E", "F", "G", "A", "B"].at(7.rand).postln})
+
+Task({
+	50.do({
+		["C", "D", "E", "F", "G", "A", "B"].at(7.rand).postln;
+		1.wait;
+	});
+}).play
+
+Task({
+	a = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+	"count, midi, pitch, octave".postln;
+	do(50, {arg count;
+		p = rrand(36, 72);
+		[count, p, a.wrapAt(p), (p/12).round(1) - 1].postln;
+	1.wait;
+	})
+}).play
+
+// This use the PMCritale synth definition
+(
+a = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+"event, midi, pitch, octave".postln;
+r = Task({
+	inf.do({arg count;
+		var midi, oct, density;
+		density = 1.0; // 100% of the time. uncomment below for 70%, etc.
+		// density = 0.7;
+		// density = 0.3;
+		midi = [0, 2, 4, 7, 9].choose;
+		// midi = [0, 2, 4, 5, 7, 9, 11].choose;
+		// midi = [0, 2, 3, 5, 6, 8, 9, 11].choose;
+		// midi = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].choose;
+		oct = [48, 60, 72].choose;
+		if (density.coin,
+			{ // true action
+				"".postln;
+				[midi + oct, a.wrapAt(midi),
+					(oct/12).round(1)].post;
+				Synth("PMCrotale",
+					["midi", midi + oct, "tone", rrand(1, 7),
+						"art", rrand(0.3, 2.0), "amp", rrand(0.1, 0.1), "pan",
+						1.0.rand2]);
+		}, {["rest"].post}); // false action
+		0.2.wait;
+	});
+}).start
+)
+
+r.stop; // run this to stop
+
+if (10 == 10, {"10 is indeed equal to 10"}, {"false"})
+if ((1 < 20).and(1.isInteger), {"1 is less than 20"}, {"false"})
+10.do({arg count; [count, if(count.odd, {"odd"}, {"even"})].postln})
+(
+84.do({arg count; if([0, 4, 7].includes(count%12),
+	{count.post; " is part of a C triad.".postln},
+	{count.post; " is not part of a C triad.".postln})})
+)
+50.do({if(1.0.rand.round(0.01).post > 0.5, {" > 0.5".postln}, {" < 0.5".postln})})
+50.do({if(1.0.rand > 0.5, {"play a note".postln}, {"rest".postln})})
+50.do({if(0.5.coin, {"play a note".postln}, {"rest".postln})})
+if ((10.odd).or(10 < 20), {"true".postln}, {"false".postln})
+
+Array.fill(100, {wchoose([1, 2, 3, 4], [0.5, 0.3, 0.125, 0.075])}).sort
+
+// How to "Do" Array
+[0, 2, 4, 5, 7, 9, 11].do({arg each, count; ["count", count,  "each", each].postln})
+// same
+[0, 2, 4, 5, 7, 9, 11].do({arg whatever, blech; [blech, whatever].postln})
+(
+var pc;
+pc = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+[0, 2, 4, 5, 7, 9, 11].do({arg each; pc.wrapAt(each).postln;})
+)
+
+// Figure 1.14
+// Nested do to generate a 12-tone matrix.
+(
+var row, inversion, pitchClass;
+row = Array.series(11, 1).scramble.insert(0, 0);
+// or enter your own row, e.g. Webern's Op 27
+// row = [0, 11, 8, 2, 1, 7, 9, 10, 4, 3, 5, 6];
+row.postln;
+inversion = 12 - row;
+// I add spaces to the strings for a tidy row
+pitchClass = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+inversion.do({arg eachInv;
+	var trans;
+	trans = (row + eachInv);
+	// prints just pitch class
+	trans.do({arg scaleDegree; pitchClass.wrapAt(scaleDegree).post});
+	// "".postln; // uncomment these line if you want to do both print just numbers
+	// trans.do({arg scaleDegree; (scaleDegree%12).post; " ".post});
+	"".postln;
+});
+"".postln
+)
+
+// Figure 1.15
+// Mix down a few of them tuned to harmonics:
+(
+{
+	var fund = 220;
+	Mix.ar(
+		[
+			SinOsc.ar(220, mul: max(0, LFNoise1.kr(12))),
+			SinOsc.ar(440, mul: max(0, LFNoise1.kr(12))) * 1/2,
+			SinOsc.ar(660, mul: max(0, LFNoise1.kr(12))) * 1/3,
+			SinOsc.ar(880, mul: max(0, LFNoise1.kr(12))) * 1/4,
+			SinOsc.ar(1110, mul: max(0, LFNoise1.kr(12))) * 1/5,
+			SinOsc.ar(1320, mul: max(0, LFNoise1.kr(12))) * 1/6
+		]
+	).dup * 0.5
+}.play
+)
+
+// Figure 1.16
+// Try this first
+Array.fill(20, {arg cnt; cnt + 1 * 110}); // harmonics built on 110
+
+// And a patch
+(
+{
+	Mix.ar(
+		Array.fill(12,
+			{arg count;
+				var harm;
+				harm = count + 1 * 110; // remember precedence; count + 1, then * 110
+				harm.postln;
+				SinOsc.ar(harm,
+					mul: max([0, 0], SinOsc.kr(count + 1/4)) // try these alternatives
+				) * 1 / (count + 1)
+		})
+	) * 0.5
+}.play
+)
+// SinOsc.kr(count + 1/4)
+// SinOsc.kr(rrand(1/4, 5/4))
+// SinOsc.kr(1/4, 2pi.rand)
+// LFNoise1.kr(1)
+// LFNoise0.kr(rrand(1, 5))
+
