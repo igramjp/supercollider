@@ -7,7 +7,7 @@
 
 Server.default = s = Server.internal.boot
 
-play({SinOsc.ar(LFNoise0.kr(12, mul: 600, add: 1000), 0.3)})
+play({SinOsc.ar(LFNoise0.kr(1, mul: 600, add: 0), 0.3)})
 
 // SinOsc Examples
 // create an audio-rate sine wave at 200 Hz,
@@ -1109,3 +1109,78 @@ Array.fill(20, {arg cnt; cnt + 1 * 110}); // harmonics built on 110
 // LFNoise1.kr(1)
 // LFNoise0.kr(rrand(1, 5))
 
+
+
+/**
+ * SuperCollider #013
+ */
+Server.default = s = Server.internal.boot
+
+// Figure 1.18
+// Physically modeled bells
+// Try this first, to illustrate the array of arrays.
+Array.fill(3, {Array.fill(10, {rand(1000)})})
+// Then this patch.
+
+(
+{
+	var scale, specs, freqs, amps, rings, numRes = 5, bells = 20, pan;
+	scale = [60, 62, 64, 67, 69].midicps;
+	Mix.fill(bells, {
+		freqs = Array.fill(numRes, {rrand(1, 15) * (scale.choose)});
+		amps = Array.fill(numRes, {rrand(0.3, 0.9)});
+		rings = Array.fill(numRes, {rrand(1.0, 4.0)});
+		specs = [freqs, amps, rings].round(0.01);
+		// specs.postln;
+		pan = (LFNoise1.kr(rrand(3, 6)) * 2).softclip;
+		Pan2.ar(
+            Klank.ar(`specs, Dust.ar(1/6, 0.03)),
+            pan, 10.0)
+	})
+}.play
+)
+// ` = Ref.new(thing)
+// backquote/backtick [alt + ~]
+
+// Figure 1.19
+// Array in Sequences
+(
+// first define the synth
+SynthDef.new("SimpleBlip", {
+	arg midi = 60, tone = 10, art = 0.125, amp = 0.2, pan = -1;
+	var out, temper;
+	out = Pan2.ar(
+		Blip.ar( // play hte sequence
+			midi.midicps,
+			tone
+		) * EnvGen.kr(Env.perc(0.01, art)),
+		pan // pan left, center, or right
+	);
+	DetectSilence.ar(out, doneAction: 2);
+	amp = amp - ((midi - 60) * 0.02);
+	Out.ar(0, out * amp)
+}).add;
+)
+
+(
+// Then run this Task
+~inst = [0, 0, 0]; // Three containers for tasks
+~pSeq = [0, 0, 0]; // Three containers for sequences
+~scaleAdd = [4, 5, 11, nil, 10, 3, 6, nil];
+~notes = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+~rout = Task({
+	inf.do({
+		arg cnt1;
+		var steps, durSeq, harmSeq;
+		steps = rrand(6, 12);
+		if(cnt1 % 6 == 0, // every sixth iteration, add a degree
+			{~scale = ~scale.add(~scaleAdd.wrapAt((cnt1 / 6).round(1) - 1));});
+		"\nIteration: ".post; cnt1.post;
+		[" (center) ", " (right) ", " (left) "].wrapAt(cnt1).postln;
+		if(cnt1 % 24 == 0, // reset all three
+			{~scale = [0, 2, 7, 9];
+				3.do({arg cnt2;
+					~pSeq.wrapPut(cnt2,
+						Array.fill(steps,
+							{~scale.choose + [48, 60].choose}))})});
+		"scale: ".post; ~scale.postln;
